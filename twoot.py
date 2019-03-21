@@ -546,8 +546,9 @@ class Twoot:
             2. so-called "self retweet" (create a corresponding BT)
             3. so-called "self reply" (create a corresponding thread)
 
-        Otherwise, the tweet will be just skipped. In case `dry_run` is True,
-        the actual post will never executed but only the messages are output.
+        Otherwise, create a toot that only includes URI of retweeted tweet.
+        In case `dry_run` is True, the actual post will never executed
+        and shows messages only.
 
         Args:
             tweet: a tweet dict
@@ -605,10 +606,25 @@ class Twoot:
                 # no more process for RT
                 return
 
-            # otherwise, just skip
+            # otherwise, toot URI of retweet
             else:
-                logger.debug('Skipping a tweet (id: {}) because it is an RT'.
-                             format(tweet_id))
+                logger.debug('Original tweet id is {}'.format(retweeted_tweet['id']))
+                logger.debug('Original tweet user id is {}'.format(retweeted_tweet['user']['id']))
+                if not dry_run:
+                    uri = 'https://twitter.com/{}/status/{}'.format(retweeted_tweet['user']['id'], retweeted_tweet['id'])
+                    logger.debug('Tweet URI is {}'.format(uri))
+                    r = self.__toot(uri)
+
+                # store the twoot
+                if r:
+                    toot_id = r['id']
+                    self.__store_twoot(toot_id, tweet_id)
+
+                    logger.info(
+                        'Forwarded a tweet (id: {}) as a toot (id: {})'.format(
+                            tweet_id, toot_id))
+
+                # no more process for RT
                 return
 
         # treat media
